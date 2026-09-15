@@ -9,6 +9,7 @@ import {
   PAYMENT_METHOD_LABELS,
   type OrderStatus,
 } from '../types'
+import { formatMoney } from '../utils/formatMoney'
 
 export function OrdersPage() {
   const { orders } = useCatalog()
@@ -114,9 +115,13 @@ export function OrdersPage() {
                         {order.address.postalCode}
                       </p>
                     </td>
-                    <td>{PAYMENT_METHOD_LABELS[order.paymentMethod]}</td>
+                    <td>
+                      {PAYMENT_METHOD_LABELS[
+                        order.paymentMethod as keyof typeof PAYMENT_METHOD_LABELS
+                      ] ?? order.paymentMethod}
+                    </td>
                     <td>{order.items.reduce((n, i) => n + i.quantity, 0)}</td>
-                    <td>${order.total}</td>
+                    <td>{formatMoney(order.total)}</td>
                     <td>
                       <StatusBadge status={order.status} />
                     </td>

@@ -1,0 +1,2 @@
+export const MAX_FEATURED_PRODUCTS = 4
+export const MAX_COLLECTION_PRODUCTS = 6

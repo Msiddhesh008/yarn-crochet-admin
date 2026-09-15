@@ -11,6 +11,9 @@ import { OrdersPage } from './pages/OrdersPage'
 import { OrderDetailPage } from './pages/OrderDetailPage'
 import { ContentPage } from './pages/ContentPage'
 import { CustomRequestsPage } from './pages/CustomRequestsPage'
+import { CustomersPage } from './pages/CustomersPage'
+import { CustomerDetailPage } from './pages/CustomerDetailPage'
+import { ApiHealthPage } from './pages/ApiHealthPage'
 
 function ProductFormRoute() {
   const { id } = useParams()
@@ -32,8 +35,11 @@ export default function App() {
                 <Route path="products/:id" element={<ProductFormRoute />} />
                 <Route path="orders" element={<OrdersPage />} />
                 <Route path="orders/:id" element={<OrderDetailPage />} />
+                <Route path="customers" element={<CustomersPage />} />
+                <Route path="customers/:id" element={<CustomerDetailPage />} />
                 <Route path="content" element={<ContentPage />} />
                 <Route path="custom-requests" element={<CustomRequestsPage />} />
+                <Route path="api-health" element={<ApiHealthPage />} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

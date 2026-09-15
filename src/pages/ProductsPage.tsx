@@ -5,7 +5,14 @@ import { useCatalog } from '../context/CatalogContext'
 import { StatusBadge } from '../components/StatusBadge'
 import { EmptyState } from '../components/EmptyState'
 import { ThemeDropdown, ThemeInput } from '../components/form/FormControls'
-import { CATEGORIES, type PublishStatus } from '../types'
+import { ThemeSwitch } from '../components/form/ThemeSwitch'
+import { CATEGORIES, type Product, type PublishStatus } from '../types'
+import { mediaUrl } from '../utils/mediaUrl'
+import { formatMoney } from '../utils/formatMoney'
+import {
+  MAX_COLLECTION_PRODUCTS,
+  MAX_FEATURED_PRODUCTS,
+} from '../constants/productLimits'
 
 const CATEGORY_OPTIONS = [
   { value: 'All', label: 'All categories' },
@@ -13,10 +20,20 @@ const CATEGORY_OPTIONS = [
 ]
 
 export function ProductsPage() {
-  const { products, deleteProduct } = useCatalog()
+  const { products, deleteProduct, saveProduct } = useCatalog()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('All')
   const [status, setStatus] = useState<'All' | PublishStatus>('All')
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
+
+  const featuredCount = useMemo(
+    () => products.filter((p) => p.featured).length,
+    [products],
+  )
+  const collectionCount = useMemo(
+    () => products.filter((p) => p.showInCollection).length,
+    [products],
+  )
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -31,11 +48,50 @@ export function ProductsPage() {
     })
   }, [products, query, category, status])
 
+  const toggleFlag = (
+    product: Product,
+    field: 'featured' | 'showInCollection',
+    next: boolean,
+  ) => {
+    if (next) {
+      if (field === 'featured' && !product.featured && featuredCount >= MAX_FEATURED_PRODUCTS) {
+        window.alert(`Only ${MAX_FEATURED_PRODUCTS} featured products are allowed`)
+        return
+      }
+      if (
+        field === 'showInCollection' &&
+        !product.showInCollection &&
+        collectionCount >= MAX_COLLECTION_PRODUCTS
+      ) {
+        window.alert(
+          `Only ${MAX_COLLECTION_PRODUCTS} collection products are allowed`,
+        )
+        return
+      }
+    }
+    const key = `${product.id}:${field}`
+    setPendingKey(key)
+    saveProduct({ ...product, [field]: next })
+      .catch((err: unknown) => {
+        window.alert(
+          err instanceof Error ? err.message : 'Could not update product',
+        )
+      })
+      .finally(() => {
+        setPendingKey((current) => (current === key ? null : current))
+      })
+  }
+
   return (
     <div>
       <p className="eyebrow">Catalog</p>
       <h1 className="page-title">Products</h1>
-      <p className="page-sub">Edit pieces that appear on the Yarn storefront.</p>
+      <p className="page-sub">
+        Edit pieces that appear on the Yarn storefront. Featured max{' '}
+        {MAX_FEATURED_PRODUCTS} ({featuredCount}/{MAX_FEATURED_PRODUCTS}),
+        collection max {MAX_COLLECTION_PRODUCTS} ({collectionCount}/
+        {MAX_COLLECTION_PRODUCTS}).
+      </p>
 
       <div className="toolbar toolbar--filters">
         <div className="toolbar__filters">
@@ -108,7 +164,7 @@ export function ProductsPage() {
                   >
                     <td>
                       <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
-                        <img src={product.image} alt="" className="thumb" />
+                        <img src={mediaUrl(product.image)} alt="" className="thumb" />
                         <div>
                           <strong>{product.name}</strong>
                           <p className="page-sub" style={{ marginTop: 0, fontSize: '0.8rem' }}>
@@ -118,12 +174,40 @@ export function ProductsPage() {
                       </div>
                     </td>
                     <td>{product.category}</td>
-                    <td>${product.price}</td>
+                    <td>{formatMoney(product.price)}</td>
                     <td>
                       <StatusBadge status={product.status} />
                     </td>
-                    <td>{product.featured ? 'Yes' : '—'}</td>
-                    <td>{product.showInCollection ? 'Yes' : '—'}</td>
+                    <td>
+                      <ThemeSwitch
+                        id={`feat-${product.id}`}
+                        checked={product.featured}
+                        disabled={
+                          pendingKey === `${product.id}:featured` ||
+                          (!product.featured &&
+                            featuredCount >= MAX_FEATURED_PRODUCTS)
+                        }
+                        ariaLabel={`Featured for ${product.name}`}
+                        onChange={(checked) =>
+                          toggleFlag(product, 'featured', checked)
+                        }
+                      />
+                    </td>
+                    <td>
+                      <ThemeSwitch
+                        id={`coll-${product.id}`}
+                        checked={product.showInCollection}
+                        disabled={
+                          pendingKey === `${product.id}:showInCollection` ||
+                          (!product.showInCollection &&
+                            collectionCount >= MAX_COLLECTION_PRODUCTS)
+                        }
+                        ariaLabel={`Show ${product.name} in collection`}
+                        onChange={(checked) =>
+                          toggleFlag(product, 'showInCollection', checked)
+                        }
+                      />
+                    </td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.35rem' }}>
                         <Link
@@ -137,7 +221,13 @@ export function ProductsPage() {
                           className="btn btn--ghost btn--sm"
                           onClick={() => {
                             if (window.confirm(`Remove ${product.name}?`)) {
-                              deleteProduct(product.id)
+                              deleteProduct(product.id).catch((err: unknown) => {
+                                window.alert(
+                                  err instanceof Error
+                                    ? err.message
+                                    : 'Could not delete product',
+                                )
+                              })
                             }
                           }}
                         >

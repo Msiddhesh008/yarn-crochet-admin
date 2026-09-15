@@ -2,9 +2,12 @@ import { Link } from 'react-router-dom'
 import { StatCard } from '../components/StatCard'
 import { StatusBadge } from '../components/StatusBadge'
 import { useCatalog } from '../context/CatalogContext'
+import { mediaUrl } from '../utils/mediaUrl'
+import { formatMoney } from '../utils/formatMoney'
 
 export function OverviewPage() {
-  const { products, orders, customRequests, resetSeed } = useCatalog()
+  const { products, orders, customRequests, customers, error, loading } =
+    useCatalog()
   const published = products.filter((p) => p.status === 'published').length
   const openOrders = orders.filter(
     (o) => o.status === 'new' || o.status === 'in_progress',
@@ -19,11 +22,14 @@ export function OverviewPage() {
       <p className="eyebrow">Overview</p>
       <h1 className="page-title">Good day in the studio</h1>
       <p className="page-sub">A quiet look at pieces, orders, and requests.</p>
+      {loading ? <p className="page-sub">Loading studio data…</p> : null}
+      {error ? <p className="login-error">{error}</p> : null}
 
       <div className="stats">
         <StatCard label="Products" value={products.length} />
         <StatCard label="Published" value={published} />
         <StatCard label="Open orders" value={openOrders} />
+        <StatCard label="Customers" value={customers.length} />
         <StatCard label="Custom requests" value={customRequests.length} />
       </div>
 
@@ -54,7 +60,7 @@ export function OverviewPage() {
                       <Link to={`/orders/${order.id}`}>{order.id}</Link>
                     </td>
                     <td>{order.customer}</td>
-                    <td>${order.total}</td>
+                    <td>{formatMoney(order.total)}</td>
                     <td>
                       <StatusBadge status={order.status} />
                     </td>
@@ -81,24 +87,16 @@ export function OverviewPage() {
                 to={`/products/${product.id}`}
                 style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}
               >
-                <img src={product.image} alt="" className="thumb" />
+                <img src={mediaUrl(product.image)} alt="" className="thumb" />
                 <div>
                   <strong>{product.name}</strong>
                   <p className="page-sub" style={{ marginTop: 0 }}>
-                    ${product.price} · {product.category}
+                    {formatMoney(product.price)} · {product.category}
                   </p>
                 </div>
               </Link>
             ))}
           </div>
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            style={{ marginTop: '1.25rem' }}
-            onClick={resetSeed}
-          >
-            Reset mock data
-          </button>
         </section>
       </div>
     </div>

@@ -1,9 +1,23 @@
 import { useId, useRef, useState } from 'react'
 import { Upload, X } from 'lucide-react'
 import { IMAGE_ASPECTS, type ImageAspectKey } from '../data/imageAspects'
-import { fileToObjectUrl } from '../utils/imageUpload'
+import { fileToObjectUrl, keyNearBlackToAlpha } from '../utils/imageUpload'
 import { ThemeInput } from './form/FormControls'
 import { ImageCropModal } from './ImageCropModal'
+import { mediaUrl } from '../utils/mediaUrl'
+import { ApiError, uploadDataUrl } from '../services/api'
+
+const PNG_ASPECTS: ImageAspectKey[] = ['logo', 'qr', 'hero', 'maker']
+
+const DEFAULT_FOLDERS: Record<ImageAspectKey, string> = {
+  product: 'products',
+  hero: 'content/hero',
+  maker: 'content/maker',
+  gallery: 'content/gallery',
+  process: 'content/process',
+  logo: 'content/brand',
+  qr: 'content/instagram',
+}
 
 interface ImageFieldProps {
   id?: string
@@ -12,6 +26,7 @@ interface ImageFieldProps {
   onChange: (value: string) => void
   optional?: boolean
   aspect: ImageAspectKey
+  uploadFolder?: string
 }
 
 export function ImageField({
@@ -21,6 +36,7 @@ export function ImageField({
   onChange,
   optional = false,
   aspect,
+  uploadFolder,
 }: ImageFieldProps) {
   const autoId = useId()
   const fieldId = id ?? autoId
@@ -28,8 +44,10 @@ export function ImageField({
   const inputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
   const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
   const aspectMeta = IMAGE_ASPECTS[aspect]
+  const folder = uploadFolder ?? DEFAULT_FOLDERS[aspect]
 
   const closeCrop = () => {
     if (cropSrc) URL.revokeObjectURL(cropSrc)
@@ -52,6 +70,31 @@ export function ImageField({
     }
   }
 
+  const onCropComplete = async (dataUrl: string) => {
+    setBusy(true)
+    setError('')
+    try {
+      let next = dataUrl
+      if (aspect === 'hero') {
+        next = await keyNearBlackToAlpha(dataUrl)
+      }
+      const url = await uploadDataUrl(next, folder)
+      onChange(url)
+      closeCrop()
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Could not finish that image.'
+      setError(message)
+      console.error(err)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="field image-field">
       <label htmlFor={fieldId}>
@@ -61,15 +104,23 @@ export function ImageField({
       <div className="image-field__row">
         {value ? (
           <img
-            src={value}
+            src={mediaUrl(value)}
             alt=""
             className="image-field__preview"
-            style={{ aspectRatio: String(aspectMeta.ratio) }}
+            style={
+              aspectMeta.ratio
+                ? { aspectRatio: String(aspectMeta.ratio) }
+                : undefined
+            }
           />
         ) : (
           <div
             className="image-field__placeholder"
-            style={{ aspectRatio: String(aspectMeta.ratio) }}
+            style={
+              aspectMeta.ratio
+                ? { aspectRatio: String(aspectMeta.ratio) }
+                : { aspectRatio: '4 / 5' }
+            }
             aria-hidden
           >
             {aspectMeta.label}
@@ -82,8 +133,8 @@ export function ImageField({
             value={value.startsWith('data:') ? '' : value}
             placeholder={
               value.startsWith('data:')
-                ? 'Cropped upload'
-                : 'Paste URL or path…'
+                ? 'Uploaded image'
+                : 'Paste URL or /uploads path…'
             }
             onChange={(e) => {
               setError('')
@@ -101,7 +152,7 @@ export function ImageField({
             />
             <label htmlFor={fileId} className="btn btn--ghost btn--sm">
               <Upload size={14} />
-              Upload & crop
+              {busy ? 'Uploading…' : 'Upload & crop'}
             </label>
             {value ? (
               <button
@@ -118,7 +169,11 @@ export function ImageField({
           </div>
           {error ? <p className="image-field__error">{error}</p> : null}
           <p className="page-sub" style={{ margin: 0, fontSize: '0.78rem' }}>
-            {aspectMeta.hint}. Crop to {aspectMeta.label} before saving
+            {aspectMeta.hint}.
+            {aspectMeta.ratio
+              ? ` Crop to ${aspectMeta.label} before saving`
+              : ' Crop freely before saving'}
+            {aspect === 'hero' ? ' Black studio plates are keyed out.' : ''}
             {optional ? ' (optional)' : ''}.
           </p>
         </div>
@@ -130,11 +185,10 @@ export function ImageField({
           aspect={aspectMeta.ratio}
           aspectLabel={aspectMeta.label}
           aspectHint={aspectMeta.hint}
-          preferPng={aspect === 'logo' || aspect === 'qr'}
+          preferPng={PNG_ASPECTS.includes(aspect)}
           onCancel={closeCrop}
           onComplete={(dataUrl) => {
-            onChange(dataUrl)
-            closeCrop()
+            onCropComplete(dataUrl).catch(console.error)
           }}
         />
       ) : null}

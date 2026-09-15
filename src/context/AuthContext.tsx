@@ -2,46 +2,69 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
-import { loadJson, saveJson } from '../services/storage'
+import {
+  clearSession,
+  getStoredEmail,
+  getStoredToken,
+  loginRequest,
+  setSession,
+} from '../services/api'
 
 interface AuthContextValue {
   isAuthenticated: boolean
   email: string | null
-  login: (email: string, password: string) => boolean
+  ready: boolean
+  login: (email: string, password: string) => Promise<boolean>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [email, setEmail] = useState<string | null>(() =>
-    loadJson<string | null>('auth-email', null),
-  )
+  const [email, setEmail] = useState<string | null>(() => getStoredEmail())
+  const [ready, setReady] = useState(false)
 
-  const login = useCallback((nextEmail: string, password: string) => {
+  useEffect(() => {
+    const token = getStoredToken()
+    const storedEmail = getStoredEmail()
+    if (!token || !storedEmail) {
+      clearSession()
+      setEmail(null)
+    }
+    setReady(true)
+  }, [])
+
+  const login = useCallback(async (nextEmail: string, password: string) => {
     if (!nextEmail.trim() || !password.trim()) return false
-    setEmail(nextEmail.trim())
-    saveJson('auth-email', nextEmail.trim())
-    return true
+    try {
+      const result = await loginRequest(nextEmail.trim(), password)
+      setSession(result.token, result.email)
+      setEmail(result.email)
+      return true
+    } catch {
+      return false
+    }
   }, [])
 
   const logout = useCallback(() => {
+    clearSession()
     setEmail(null)
-    saveJson('auth-email', null)
   }, [])
 
   const value = useMemo(
     () => ({
-      isAuthenticated: Boolean(email),
+      isAuthenticated: Boolean(email && getStoredToken()),
       email,
+      ready,
       login,
       logout,
     }),
-    [email, login, logout],
+    [email, ready, login, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

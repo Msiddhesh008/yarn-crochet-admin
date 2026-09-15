@@ -35,9 +35,17 @@ export interface OrderItem {
   quantity: number
   price: number
   color?: string
+  image?: string
+  slug?: string
 }
 
-export type PaymentMethod = 'card' | 'paypal' | 'apple_pay' | 'bank_transfer'
+export type PaymentMethod = 'razorpay' | 'cod'
+
+export type PaymentStatus =
+  | 'pending'
+  | 'paid'
+  | 'failed'
+  | 'cod_pending'
 
 export interface OrderAddress {
   line1: string
@@ -50,10 +58,14 @@ export interface OrderAddress {
 
 export interface Order {
   id: string
+  customerId?: string
   customer: string
   email: string
   address: OrderAddress
-  paymentMethod: PaymentMethod
+  paymentMethod: PaymentMethod | string
+  paymentStatus?: PaymentStatus | string
+  razorpayOrderId?: string
+  razorpayPaymentId?: string
   items: OrderItem[]
   total: number
   status: OrderStatus
@@ -61,11 +73,20 @@ export interface Order {
   note: string
 }
 
-export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  razorpay: 'Razorpay',
+  cod: 'Cash on delivery',
   card: 'Card',
   paypal: 'PayPal',
   apple_pay: 'Apple Pay',
   bank_transfer: 'Bank transfer',
+}
+
+export const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending: 'Payment pending',
+  paid: 'Paid',
+  failed: 'Payment failed',
+  cod_pending: 'Pay on delivery',
 }
 
 export interface CustomRequest {

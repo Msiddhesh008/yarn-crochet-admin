@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import type { SiteContent } from '../types'
+import type { ContentSectionKey } from '../types/contentSections'
 import { ImageField } from './ImageField'
+import { ContentSectionSave } from './ContentSectionSave'
 import { TextAreaField, TextField } from './form/FormControls'
 
 interface FieldProps {
@@ -29,13 +32,60 @@ function Field({ id, label, value, onChange, multiline }: FieldProps) {
 interface ContentEditorProps {
   draft: SiteContent
   setDraft: (next: SiteContent) => void
+  onSaveSection: (section: ContentSectionKey) => Promise<void>
 }
 
-export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
+export function ContentEditor({
+  draft,
+  setDraft,
+  onSaveSection,
+}: ContentEditorProps) {
+  const [savingSection, setSavingSection] = useState<ContentSectionKey | null>(
+    null,
+  )
+  const [savedSection, setSavedSection] = useState<ContentSectionKey | null>(
+    null,
+  )
+  const [sectionError, setSectionError] = useState<
+    Partial<Record<ContentSectionKey, string>>
+  >({})
+
   const patch = <K extends keyof SiteContent>(
     key: K,
     value: SiteContent[K],
   ) => setDraft({ ...draft, [key]: value })
+
+  const saveSection = (section: ContentSectionKey, label: string) => {
+    setSavingSection(section)
+    setSectionError((prev) => ({ ...prev, [section]: '' }))
+    onSaveSection(section)
+      .then(() => {
+        setSavedSection(section)
+        window.setTimeout(() => {
+          setSavedSection((current) => (current === section ? null : current))
+        }, 1600)
+      })
+      .catch((err: unknown) => {
+        setSectionError((prev) => ({
+          ...prev,
+          [section]:
+            err instanceof Error ? err.message : `Could not save ${label}`,
+        }))
+      })
+      .finally(() => {
+        setSavingSection((current) => (current === section ? null : current))
+      })
+  }
+
+  const sectionSave = (section: ContentSectionKey, label: string) => (
+    <ContentSectionSave
+      section={label}
+      saving={savingSection === section}
+      saved={savedSection === section}
+      error={sectionError[section] ?? ''}
+      onSave={() => saveSection(section, label)}
+    />
+  )
 
   return (
     <div className="stack">
@@ -70,6 +120,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
           value={draft.brand.logoSrc}
           onChange={(logoSrc) => patch('brand', { ...draft.brand, logoSrc })}
         />
+        {sectionSave('brand', 'Brand')}
       </section>
 
       <section className="panel stack">
@@ -120,6 +171,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
           value={draft.hero.image}
           onChange={(image) => patch('hero', { ...draft.hero, image })}
         />
+        {sectionSave('hero', 'Hero')}
       </section>
 
       <section className="panel stack">
@@ -159,6 +211,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
             patch('collection', { ...draft.collection, intro })
           }
         />
+        {sectionSave('collection', 'Collection')}
       </section>
 
       <section className="panel stack">
@@ -206,6 +259,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
             />
           </div>
         ))}
+        {sectionSave('stitchStory', 'The Making')}
       </section>
 
       <section className="panel stack">
@@ -257,6 +311,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
           value={draft.maker.image}
           onChange={(image) => patch('maker', { ...draft.maker, image })}
         />
+        {sectionSave('maker', 'Maker')}
       </section>
 
       <section className="panel stack">
@@ -315,6 +370,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
             />
           </div>
         ))}
+        {sectionSave('process', 'Process')}
       </section>
 
       <section className="panel stack">
@@ -348,6 +404,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
             })
           }
         />
+        {sectionSave('featuredShowcase', 'Featured')}
       </section>
 
       <section className="panel stack">
@@ -387,6 +444,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
             patch('customOrder', { ...draft.customOrder, cta })
           }
         />
+        {sectionSave('customOrder', 'Custom')}
       </section>
 
       <section className="panel stack">
@@ -468,6 +526,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
         >
           Add gallery item
         </button>
+        {sectionSave('gallery', 'Studio Notes')}
       </section>
 
       <section className="panel stack">
@@ -535,6 +594,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
         >
           Add testimonial
         </button>
+        {sectionSave('testimonials', 'Kind Words')}
       </section>
 
       <section className="panel stack">
@@ -565,6 +625,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
             patch('shopPage', { ...draft.shopPage, subheading })
           }
         />
+        {sectionSave('shopPage', 'Shop')}
       </section>
 
       <section className="panel stack">
@@ -610,6 +671,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
           value={draft.aboutPage.cta}
           onChange={(cta) => patch('aboutPage', { ...draft.aboutPage, cta })}
         />
+        {sectionSave('aboutPage', 'Our Story')}
       </section>
 
       <section className="panel stack">
@@ -649,6 +711,7 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
             patch('customPage', { ...draft.customPage, intro })
           }
         />
+        {sectionSave('customPage', 'Custom Orders')}
       </section>
 
       <section className="panel stack">
@@ -711,6 +774,13 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
             patch('footer', { ...draft.footer, handmadeNote })
           }
         />
+        {sectionSave('footer', 'Footer')}
+      </section>
+
+      <section className="panel stack">
+        <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
+          Instagram
+        </h2>
         <Field
           id="ig-handle"
           label="Instagram handle"
@@ -742,12 +812,20 @@ export function ContentEditor({ draft, setDraft }: ContentEditorProps) {
             patch('instagram', { ...draft.instagram, scanLabel })
           }
         />
+        {sectionSave('instagram', 'Instagram')}
+      </section>
+
+      <section className="panel stack">
+        <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
+          Handmade note
+        </h2>
         <Field
           id="handmade-note"
           label="Product handmade note"
           value={draft.handmadeNote}
           onChange={(handmadeNote) => setDraft({ ...draft, handmadeNote })}
         />
+        {sectionSave('handmadeNote', 'Handmade note')}
       </section>
     </div>
   )

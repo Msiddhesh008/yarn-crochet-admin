@@ -4,22 +4,23 @@ Boutique admin dashboard for the Yarn storefront — same tokens and visual lang
 
 ## Develop
 
+Start the API first (`Server/`), then:
+
 ```bash
 cd Admin
 npm install
+cp .env.example .env   # VITE_API_URL=http://localhost:4000
 npm run dev
 ```
 
-Mock login: any non-empty email + password (defaults prefilled).
+Login: `hello@yarn.studio` / `handmade` (from Server `.env`).
 
 ## Features
 
 - Overview stats
-- Products CMS (create / edit / draft / featured)
-- Orders list + status updates
-- Storefront content editor (full marketing copy + images, nested `SiteContent` for future APIs)
-- Custom requests inbox
+- Products CMS (create / edit / draft / featured) via API
+- Orders list + status updates (still local mock until checkout)
+- Storefront content editor synced to API
+- Custom requests inbox from API
 
-Data persists in `localStorage` (browser only). Content key: `yarn-admin:content-v3`. Swap `loadJson`/`saveJson` for HTTP when backend APIs land.
-
-Images can be pasted as a URL/path or uploaded from the device. Uploads open a cropper locked to the storefront aspect ratio for that slot (e.g. products/hero **4∶5**, maker **3∶4**, logo **8∶5**, QR **1∶1**). Cropped images are stored locally as data URLs until a media API exists.
+Images can be pasted as a URL/path or uploaded (cropped data URLs stored until a media API exists).

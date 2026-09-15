@@ -61,12 +61,18 @@ export function CustomRequestsPage() {
               label="Update status"
               value={req.status}
               fieldStyle={{ marginTop: '1rem' }}
-              onChange={(next) =>
+              onChange={(next) => {
                 updateCustomRequestStatus(
                   req.id,
                   next as CustomRequest['status'],
-                )
-              }
+                ).catch((err: unknown) => {
+                  window.alert(
+                    err instanceof Error
+                      ? err.message
+                      : 'Could not update status',
+                  )
+                })
+              }}
               options={STATUSES.map((s) => ({ value: s, label: s }))}
             />
           </article>

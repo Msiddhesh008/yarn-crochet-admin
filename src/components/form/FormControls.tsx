@@ -172,6 +172,8 @@ interface CheckboxFieldProps {
   label: string
   checked: boolean
   onChange: (checked: boolean) => void
+  disabled?: boolean
+  hint?: string
 }
 
 export function CheckboxField({
@@ -179,17 +181,26 @@ export function CheckboxField({
   label,
   checked,
   onChange,
+  disabled = false,
+  hint,
 }: CheckboxFieldProps) {
   return (
-    <label className="theme-checkbox" htmlFor={id}>
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      <span className="theme-checkbox__box" aria-hidden />
-      <span className="theme-checkbox__label">{label}</span>
-    </label>
+    <div>
+      <label
+        className={`theme-checkbox${disabled ? ' is-disabled' : ''}`}
+        htmlFor={id}
+      >
+        <input
+          id={id}
+          type="checkbox"
+          checked={checked}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.checked)}
+        />
+        <span className="theme-checkbox__box" aria-hidden />
+        <span className="theme-checkbox__label">{label}</span>
+      </label>
+      {hint ? <p className="field__hint">{hint}</p> : null}
+    </div>
   )
 }

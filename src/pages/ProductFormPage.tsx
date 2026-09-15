@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useCatalog } from '../context/CatalogContext'
 import { ImageField } from '../components/ImageField'
@@ -9,7 +9,11 @@ import {
   TextField,
 } from '../components/form/FormControls'
 import { CATEGORIES, type Product, type ProductCategory, type PublishStatus } from '../types'
-import { assetUrl } from '../utils/assetUrl'
+import { storageMediaPath } from '../utils/mediaUrl'
+import {
+  MAX_COLLECTION_PRODUCTS,
+  MAX_FEATURED_PRODUCTS,
+} from '../constants/productLimits'
 
 function slugify(value: string) {
   return value
@@ -23,7 +27,9 @@ export function ProductFormPage() {
   const { id } = useParams()
   const isNew = id === 'new' || !id
   const navigate = useNavigate()
-  const { products, saveProduct } = useCatalog()
+  const { products, saveProduct, loading } = useCatalog()
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
   const existing = useMemo(
     () => (isNew ? undefined : products.find((p) => p.id === id)),
     [isNew, products, id],
@@ -37,14 +43,55 @@ export function ProductFormPage() {
   const [price, setPrice] = useState(String(existing?.price ?? 36))
   const [description, setDescription] = useState(existing?.description ?? '')
   const [image, setImage] = useState(
-    existing?.image ?? assetUrl('/products/sunny-teddy.jpg'),
+    existing?.image ?? '/uploads/products/sunny-teddy.jpg',
   )
   const [colors, setColors] = useState((existing?.colors ?? ['#c9a9a6']).join(', '))
   const [featured, setFeatured] = useState(existing?.featured ?? false)
-  const [showInCollection, setShowInCollection] = useState(
-    existing?.showInCollection ?? true,
-  )
+  const [showInCollection, setShowInCollection] = useState(() => {
+    if (existing) return existing.showInCollection
+    const collectionFull =
+      products.filter((p) => p.showInCollection).length >= MAX_COLLECTION_PRODUCTS
+    return !collectionFull
+  })
   const [status, setStatus] = useState<PublishStatus>(existing?.status ?? 'draft')
+  const [hydrated, setHydrated] = useState(Boolean(isNew || existing))
+
+  const featuredCountOthers = useMemo(
+    () => products.filter((p) => p.featured && p.id !== existing?.id).length,
+    [products, existing?.id],
+  )
+  const collectionCountOthers = useMemo(
+    () =>
+      products.filter((p) => p.showInCollection && p.id !== existing?.id).length,
+    [products, existing?.id],
+  )
+  const featuredAtLimit =
+    !featured && featuredCountOthers >= MAX_FEATURED_PRODUCTS
+  const collectionAtLimit =
+    !showInCollection && collectionCountOthers >= MAX_COLLECTION_PRODUCTS
+
+  useEffect(() => {
+    if (!existing || hydrated) return
+    setName(existing.name)
+    setSlug(existing.slug)
+    setCategory(existing.category)
+    setPrice(String(existing.price))
+    setDescription(existing.description)
+    setImage(existing.image)
+    setColors(existing.colors.join(', '))
+    setFeatured(existing.featured)
+    setShowInCollection(existing.showInCollection)
+    setStatus(existing.status)
+    setHydrated(true)
+  }, [existing, hydrated])
+
+  if (!isNew && loading && !existing) {
+    return (
+      <div className="panel">
+        <p className="page-sub">Loading piece…</p>
+      </div>
+    )
+  }
 
   if (!isNew && !existing) {
     return (
@@ -59,6 +106,16 @@ export function ProductFormPage() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
+    if (featured && featuredCountOthers >= MAX_FEATURED_PRODUCTS) {
+      setFormError(`Only ${MAX_FEATURED_PRODUCTS} featured products are allowed`)
+      return
+    }
+    if (showInCollection && collectionCountOthers >= MAX_COLLECTION_PRODUCTS) {
+      setFormError(
+        `Only ${MAX_COLLECTION_PRODUCTS} collection products are allowed`,
+      )
+      return
+    }
     const next: Product = {
       id: existing?.id ?? `p-${Date.now()}`,
       name: name.trim(),
@@ -66,7 +123,7 @@ export function ProductFormPage() {
       category,
       price: Number(price) || 0,
       description: description.trim(),
-      image: image.trim(),
+      image: storageMediaPath(image.trim()),
       colors: colors
         .split(',')
         .map((c) => c.trim())
@@ -75,8 +132,14 @@ export function ProductFormPage() {
       showInCollection,
       status,
     }
+    setSaving(true)
+    setFormError('')
     saveProduct(next)
-    navigate('/products')
+      .then(() => navigate('/products'))
+      .catch((err: unknown) => {
+        setFormError(err instanceof Error ? err.message : 'Could not save product')
+      })
+      .finally(() => setSaving(false))
   }
 
   return (
@@ -114,7 +177,7 @@ export function ProductFormPage() {
             />
             <TextField
               id="price"
-              label="Price"
+              label="Price (₹)"
               type="number"
               min={0}
               step={1}
@@ -160,12 +223,24 @@ export function ProductFormPage() {
               id="featured"
               label="Featured on storefront"
               checked={featured}
+              disabled={featuredAtLimit}
+              hint={
+                featuredAtLimit
+                  ? `Max ${MAX_FEATURED_PRODUCTS} featured pieces`
+                  : `${featuredCountOthers + (featured ? 1 : 0)}/${MAX_FEATURED_PRODUCTS} used`
+              }
               onChange={setFeatured}
             />
             <CheckboxField
               id="showInCollection"
               label="Show in collection"
               checked={showInCollection}
+              disabled={collectionAtLimit}
+              hint={
+                collectionAtLimit
+                  ? `Max ${MAX_COLLECTION_PRODUCTS} collection pieces`
+                  : `${collectionCountOthers + (showInCollection ? 1 : 0)}/${MAX_COLLECTION_PRODUCTS} used`
+              }
               onChange={setShowInCollection}
             />
           </div>
@@ -179,8 +254,9 @@ export function ProductFormPage() {
           fieldStyle={{ marginTop: '1rem' }}
         />
         <div className="form-actions">
-          <button type="submit" className="btn btn--primary">
-            Save piece
+          {formError ? <p className="login-error">{formError}</p> : null}
+          <button type="submit" className="btn btn--primary" disabled={saving}>
+            {saving ? 'Saving…' : 'Save piece'}
           </button>
           <Link to="/products" className="btn btn--ghost">
             Cancel

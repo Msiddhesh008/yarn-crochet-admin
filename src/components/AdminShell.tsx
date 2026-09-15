@@ -6,11 +6,13 @@ import {
   ShoppingBag,
   FileText,
   MessageSquareHeart,
+  Users,
   LogOut,
   Menu,
   X,
   PanelLeftClose,
   PanelLeftOpen,
+  Activity,
 } from 'lucide-react'
 import logo from '../assets/logo-transparent.png'
 import { useAuth } from '../context/AuthContext'
@@ -19,8 +21,10 @@ const links = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/products', label: 'Products', icon: Package },
   { to: '/orders', label: 'Orders', icon: ShoppingBag },
+  { to: '/customers', label: 'Customers', icon: Users },
   { to: '/content', label: 'Content', icon: FileText },
   { to: '/custom-requests', label: 'Custom requests', icon: MessageSquareHeart },
+  { to: '/api-health', label: 'API Health', icon: Activity },
 ]
 
 const SIDEBAR_QUOTE = 'Little hands. Big dreams.'

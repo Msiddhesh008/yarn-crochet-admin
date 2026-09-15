@@ -10,6 +10,7 @@ export function LoginPage() {
   const [email, setEmail] = useState('hello@yarn.studio')
   const [password, setPassword] = useState('handmade')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />
@@ -17,12 +18,20 @@ export function LoginPage() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
-    const ok = login(email, password)
-    if (!ok) {
-      setError('Enter an email and password to continue.')
-      return
-    }
-    navigate('/')
+    setSubmitting(true)
+    setError('')
+    login(email, password)
+      .then((ok) => {
+        if (!ok) {
+          setError('Invalid email or password.')
+          return
+        }
+        navigate('/')
+      })
+      .catch(() => {
+        setError('Could not reach the API. Is the server running?')
+      })
+      .finally(() => setSubmitting(false))
   }
 
   return (
@@ -48,8 +57,13 @@ export function LoginPage() {
           onChange={setPassword}
           autoComplete="current-password"
         />
-        <button type="submit" className="btn btn--primary" style={{ width: '100%' }}>
-          Enter dashboard
+        <button
+          type="submit"
+          className="btn btn--primary"
+          style={{ width: '100%' }}
+          disabled={submitting}
+        >
+          {submitting ? 'Signing in…' : 'Enter dashboard'}
         </button>
       </form>
     </div>

@@ -5,8 +5,11 @@ import { SelectField } from '../components/form/FormControls'
 import {
   ORDER_STATUSES,
   PAYMENT_METHOD_LABELS,
+  PAYMENT_STATUS_LABELS,
   type OrderStatus,
 } from '../types'
+import { mediaUrl } from '../utils/mediaUrl'
+import { formatMoney } from '../utils/formatMoney'
 
 function formatAddress(order: {
   address: {
@@ -45,7 +48,12 @@ export function OrderDetailPage() {
       <p className="eyebrow">Orders</p>
       <h1 className="page-title">{order.id}</h1>
       <p className="page-sub">
-        {order.customer} · {order.email}
+        {order.customerId ? (
+          <Link to={`/customers/${order.customerId}`}>{order.customer}</Link>
+        ) : (
+          order.customer
+        )}{' '}
+        · {order.email}
       </p>
 
       <div className="grid-2" style={{ marginTop: '1.25rem' }}>
@@ -57,6 +65,7 @@ export function OrderDetailPage() {
             <table className="data-table">
               <thead>
                 <tr>
+                  <th></th>
                   <th>Piece</th>
                   <th>Qty</th>
                   <th>Price</th>
@@ -66,9 +75,25 @@ export function OrderDetailPage() {
               <tbody>
                 {order.items.map((item) => (
                   <tr key={`${item.productId}-${item.name}`}>
+                    <td>
+                      {item.image ? (
+                        <img
+                          src={mediaUrl(item.image)}
+                          alt=""
+                          style={{
+                            width: 40,
+                            height: 40,
+                            objectFit: 'cover',
+                            borderRadius: 8,
+                          }}
+                        />
+                      ) : (
+                        '—'
+                      )}
+                    </td>
                     <td>{item.name}</td>
                     <td>{item.quantity}</td>
-                    <td>${item.price}</td>
+                    <td>{formatMoney(item.price)}</td>
                     <td>
                       {item.color ? (
                         <span className="swatch" style={{ background: item.color }} />
@@ -82,7 +107,7 @@ export function OrderDetailPage() {
             </table>
           </div>
           <p style={{ marginTop: '1rem', fontFamily: 'var(--font-display)', fontSize: '1.5rem' }}>
-            Total ${order.total}
+            Total {formatMoney(order.total)}
           </p>
         </section>
 
@@ -101,7 +126,16 @@ export function OrderDetailPage() {
             </div>
             <div>
               <span>Payment</span>
-              <strong>{PAYMENT_METHOD_LABELS[order.paymentMethod]}</strong>
+              <strong>
+                {PAYMENT_METHOD_LABELS[order.paymentMethod] ??
+                  order.paymentMethod}
+                {order.paymentStatus
+                  ? ` · ${
+                      PAYMENT_STATUS_LABELS[order.paymentStatus] ??
+                      order.paymentStatus
+                    }`
+                  : ''}
+              </strong>
             </div>
             <div className="detail-list__block">
               <span>Ship to</span>
@@ -119,9 +153,17 @@ export function OrderDetailPage() {
             label="Update status"
             value={order.status}
             fieldStyle={{ marginTop: '1.25rem' }}
-            onChange={(next) =>
-              updateOrderStatus(order.id, next as OrderStatus)
-            }
+            onChange={(next) => {
+              updateOrderStatus(order.id, next as OrderStatus).catch(
+                (err: unknown) => {
+                  window.alert(
+                    err instanceof Error
+                      ? err.message
+                      : 'Could not update status',
+                  )
+                },
+              )
+            }}
             options={ORDER_STATUSES.map((s) => ({
               value: s,
               label: s.replace('_', ' '),
