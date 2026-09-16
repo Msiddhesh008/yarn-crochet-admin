@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, Trash2, Upload } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowDown, ArrowUp, RefreshCw, Trash2, Upload } from 'lucide-react'
 import { useCatalog } from '../context/CatalogContext'
 import { EmptyState } from '../components/EmptyState'
 import { TextField } from '../components/form/FormControls'
@@ -17,14 +17,46 @@ export function GalleryPage() {
     updateGalleryAsset,
     deleteGalleryAsset,
     reorderGalleryAssets,
+    syncGalleryFromCloudinary,
   } = useCatalog()
   const fileRef = useRef<HTMLInputElement>(null)
+  const didAutoSync = useRef(false)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
   const [captionDraft, setCaptionDraft] = useState('')
   const [error, setError] = useState('')
+  const [syncNotice, setSyncNotice] = useState('')
   const [editingCaptions, setEditingCaptions] = useState<Record<string, string>>(
     {},
   )
+
+  const runSync = async (announce: boolean) => {
+    setError('')
+    try {
+      const result = await syncGalleryFromCloudinary()
+      if (announce && result.imported > 0) {
+        setSyncNotice(
+          `Imported ${result.imported} image${result.imported === 1 ? '' : 's'} from Cloudinary.`,
+        )
+      } else if (announce) {
+        setSyncNotice('Gallery is already up to date with Cloudinary.')
+      }
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Could not sync from Cloudinary.',
+      )
+    }
+  }
+
+  useEffect(() => {
+    if (didAutoSync.current) return
+    didAutoSync.current = true
+    runSync(true).catch(console.error)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on mount
+  }, [])
 
   const closeCrop = () => {
     if (cropSrc) URL.revokeObjectURL(cropSrc)
@@ -107,7 +139,8 @@ export function GalleryPage() {
         <h1 className="page-title">Gallery</h1>
         <p className="page-sub">
           Cloudinary library for Studio Notes and picking images across Admin.
-          All assets appear on the homepage gallery automatically.
+          All assets appear on the homepage gallery automatically. Dashboard
+          uploads under CLOUDINARY_FOLDER are imported on open or via Sync.
         </p>
       </div>
 
@@ -129,6 +162,17 @@ export function GalleryPage() {
         />
         <LoadingButton
           type="button"
+          className="btn btn--ghost toolbar__action"
+          loading={mutating && !cropSrc}
+          onClick={() => {
+            setSyncNotice('')
+            runSync(true).catch(console.error)
+          }}
+        >
+          <RefreshCw size={16} /> Sync from Cloudinary
+        </LoadingButton>
+        <LoadingButton
+          type="button"
           className="btn btn--primary toolbar__action"
           loading={mutating && !!cropSrc}
           onClick={() => fileRef.current?.click()}
@@ -138,11 +182,16 @@ export function GalleryPage() {
       </div>
 
       {error ? <p className="image-field__error">{error}</p> : null}
+      {syncNotice ? (
+        <p className="page-sub" style={{ margin: 0 }}>
+          {syncNotice}
+        </p>
+      ) : null}
 
       {galleryAssets.length === 0 ? (
         <EmptyState
           title="No gallery images yet"
-          body="Upload a 4∶5 crop to start the Cloudinary library."
+          body="Upload here, or add images in Cloudinary under CLOUDINARY_FOLDER and Sync."
         />
       ) : (
         <div className="gallery-admin-grid">

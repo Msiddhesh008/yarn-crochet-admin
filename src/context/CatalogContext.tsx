@@ -61,6 +61,7 @@ interface CatalogContextValue {
   ) => Promise<void>
   deleteGalleryAsset: (id: string) => Promise<void>
   reorderGalleryAssets: (ids: string[]) => Promise<void>
+  syncGalleryFromCloudinary: () => Promise<{ imported: number; total: number }>
 }
 
 const CatalogContext = createContext<CatalogContextValue | null>(null)
@@ -320,6 +321,18 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     [withMutation],
   )
 
+  const syncGalleryFromCloudinary = useCallback(async () => {
+    return withMutation(async () => {
+      const result = await apiRequest<{
+        imported: number
+        total: number
+        assets: GalleryAsset[]
+      }>('/api/gallery/sync', { method: 'POST' })
+      setGalleryAssets(result.assets)
+      return { imported: result.imported, total: result.total }
+    })
+  }, [withMutation])
+
   const mutating = mutatingCount > 0
 
   const value = useMemo(
@@ -345,6 +358,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       updateGalleryAsset,
       deleteGalleryAsset,
       reorderGalleryAssets,
+      syncGalleryFromCloudinary,
     }),
     [
       products,
@@ -368,6 +382,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       updateGalleryAsset,
       deleteGalleryAsset,
       reorderGalleryAssets,
+      syncGalleryFromCloudinary,
     ],
   )
 
