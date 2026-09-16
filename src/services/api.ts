@@ -144,6 +144,55 @@ export async function uploadDataUrl(
     },
   )
 
+  const data = await parseJsonResponse(response, 'Upload failed')
+  const url =
+    data &&
+    typeof data === 'object' &&
+    'url' in data &&
+    typeof (data as { url: unknown }).url === 'string'
+      ? (data as { url: string }).url
+      : ''
+  if (!url) {
+    throw new ApiError(500, 'Upload response missing url')
+  }
+  return url
+}
+
+export interface GalleryAssetDto {
+  id: string
+  caption: string
+  imageUrl: string
+  cloudinaryPublicId: string
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+/** Upload a cropped data URL to the Cloudinary gallery library. */
+export async function uploadGalleryDataUrl(
+  dataUrl: string,
+  caption = '',
+): Promise<GalleryAssetDto> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  }
+  const token = getStoredToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const response = await fetch(`${API_URL}/api/gallery`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ dataUrl, caption }),
+  })
+
+  return (await parseJsonResponse(response, 'Gallery upload failed')) as GalleryAssetDto
+}
+
+async function parseJsonResponse(
+  response: Response,
+  fallbackLabel: string,
+): Promise<unknown> {
   const text = await response.text()
   let data: unknown = null
   if (text) {
@@ -161,21 +210,11 @@ export async function uploadDataUrl(
       'error' in data &&
       typeof (data as { error: unknown }).error === 'string'
         ? (data as { error: string }).error
-        : `Upload failed (${response.status})`
+        : `${fallbackLabel} (${response.status})`
     throw new ApiError(response.status, message)
   }
 
-  const url =
-    data &&
-    typeof data === 'object' &&
-    'url' in data &&
-    typeof (data as { url: unknown }).url === 'string'
-      ? (data as { url: string }).url
-      : ''
-  if (!url) {
-    throw new ApiError(500, 'Upload response missing url')
-  }
-  return url
+  return data
 }
 
 export async function loginRequest(

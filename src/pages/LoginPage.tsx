@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import logo from '../assets/logo-transparent.png'
 import { useAuth } from '../context/AuthContext'
 import { TextField } from '../components/form/FormControls'
+import { LoadingButton } from '../components/LoadingButton'
 
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth()
@@ -57,14 +58,15 @@ export function LoginPage() {
           onChange={setPassword}
           autoComplete="current-password"
         />
-        <button
+        <LoadingButton
           type="submit"
-          className="btn btn--primary"
+          className="btn--primary"
           style={{ width: '100%' }}
-          disabled={submitting}
+          loading={submitting}
+          loadingLabel="Signing in…"
         >
-          {submitting ? 'Signing in…' : 'Enter dashboard'}
-        </button>
+          Enter dashboard
+        </LoadingButton>
       </form>
     </div>
   )

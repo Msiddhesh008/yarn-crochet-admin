@@ -1,9 +1,10 @@
 import { useId, useRef, useState } from 'react'
-import { Upload, X } from 'lucide-react'
+import { Images, Upload, X } from 'lucide-react'
 import { IMAGE_ASPECTS, type ImageAspectKey } from '../data/imageAspects'
 import { fileToObjectUrl, keyNearBlackToAlpha } from '../utils/imageUpload'
 import { ThemeInput } from './form/FormControls'
 import { ImageCropModal } from './ImageCropModal'
+import { GalleryPickerModal } from './GalleryPickerModal'
 import { mediaUrl } from '../utils/mediaUrl'
 import { ApiError, uploadDataUrl } from '../services/api'
 
@@ -45,6 +46,7 @@ export function ImageField({
   const [error, setError] = useState('')
   const [cropSrc, setCropSrc] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const aspectMeta = IMAGE_ASPECTS[aspect]
   const folder = uploadFolder ?? DEFAULT_FOLDERS[aspect]
@@ -150,10 +152,33 @@ export function ImageField({
               hidden
               onChange={(e) => onFile(e.target.files?.[0])}
             />
-            <label htmlFor={fileId} className="btn btn--ghost btn--sm">
-              <Upload size={14} />
-              {busy ? 'Uploading…' : 'Upload & crop'}
+            <label
+              htmlFor={fileId}
+              className={`btn btn--ghost btn--sm${busy ? ' is-loading' : ''}`}
+              aria-busy={busy || undefined}
+              style={busy ? { pointerEvents: 'none', opacity: 0.7 } : undefined}
+            >
+              {busy ? (
+                <span className="admin-loader admin-loader--inline">
+                  <span className="admin-loader__spinner" />
+                </span>
+              ) : (
+                <Upload size={14} />
+              )}
+              <span className="btn__label">
+                {busy ? 'Uploading…' : 'Upload & crop'}
+              </span>
             </label>
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() => {
+                setError('')
+                setPickerOpen(true)
+              }}
+            >
+              <Images size={14} /> Choose from gallery
+            </button>
             {value ? (
               <button
                 type="button"
@@ -189,6 +214,16 @@ export function ImageField({
           onCancel={closeCrop}
           onComplete={(dataUrl) => {
             onCropComplete(dataUrl).catch(console.error)
+          }}
+        />
+      ) : null}
+
+      {pickerOpen ? (
+        <GalleryPickerModal
+          onClose={() => setPickerOpen(false)}
+          onSelect={(imageUrl) => {
+            onChange(imageUrl)
+            setPickerOpen(false)
           }}
         />
       ) : null}

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useCatalog } from '../context/CatalogContext'
 import { EmptyState } from '../components/EmptyState'
 import { StatusBadge } from '../components/StatusBadge'
@@ -7,7 +8,8 @@ import type { CustomRequest } from '../types'
 const STATUSES: CustomRequest['status'][] = ['new', 'reviewed', 'quoted', 'closed']
 
 export function CustomRequestsPage() {
-  const { customRequests, updateCustomRequestStatus } = useCatalog()
+  const { customRequests, updateCustomRequestStatus, mutating } = useCatalog()
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
   const sorted = [...customRequests].sort((a, b) =>
     b.createdAt.localeCompare(a.createdAt),
   )
@@ -60,18 +62,23 @@ export function CustomRequestsPage() {
               id={`status-${req.id}`}
               label="Update status"
               value={req.status}
+              disabled={updatingId === req.id || mutating}
+              hint={updatingId === req.id ? 'Updating…' : undefined}
               fieldStyle={{ marginTop: '1rem' }}
               onChange={(next) => {
+                setUpdatingId(req.id)
                 updateCustomRequestStatus(
                   req.id,
                   next as CustomRequest['status'],
-                ).catch((err: unknown) => {
-                  window.alert(
-                    err instanceof Error
-                      ? err.message
-                      : 'Could not update status',
-                  )
-                })
+                )
+                  .catch((err: unknown) => {
+                    window.alert(
+                      err instanceof Error
+                        ? err.message
+                        : 'Could not update status',
+                    )
+                  })
+                  .finally(() => setUpdatingId(null))
               }}
               options={STATUSES.map((s) => ({ value: s, label: s }))}
             />

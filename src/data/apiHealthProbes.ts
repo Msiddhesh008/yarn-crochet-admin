@@ -44,6 +44,14 @@ export const API_HEALTH_PROBES: ApiProbeDef[] = [
     description: 'Site content',
   },
   {
+    id: 'gallery',
+    group: 'Content',
+    method: 'GET',
+    path: '/api/gallery',
+    auth: 'none',
+    description: 'Gallery assets (Cloudinary)',
+  },
+  {
     id: 'orders',
     group: 'Commerce',
     method: 'GET',

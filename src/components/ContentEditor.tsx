@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { SiteContent } from '../types'
 import type { ContentSectionKey } from '../types/contentSections'
 import { ImageField } from './ImageField'
@@ -11,6 +11,23 @@ interface FieldProps {
   value: string
   onChange: (value: string) => void
   multiline?: boolean
+}
+
+function MountSection({
+  index,
+  children,
+}: {
+  index: number
+  children: ReactNode
+}) {
+  return (
+    <section
+      className="panel panel--mount stack"
+      style={{ animationDelay: `${Math.min(index, 12) * 35}ms` }}
+    >
+      {children}
+    </section>
+  )
 }
 
 function Field({ id, label, value, onChange, multiline }: FieldProps) {
@@ -89,7 +106,7 @@ export function ContentEditor({
 
   return (
     <div className="stack">
-      <section className="panel stack">
+      <MountSection index={0}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           Brand / Loader
         </h2>
@@ -121,9 +138,9 @@ export function ContentEditor({
           onChange={(logoSrc) => patch('brand', { ...draft.brand, logoSrc })}
         />
         {sectionSave('brand', 'Brand')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={1}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           Hero
         </h2>
@@ -172,9 +189,9 @@ export function ContentEditor({
           onChange={(image) => patch('hero', { ...draft.hero, image })}
         />
         {sectionSave('hero', 'Hero')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={2}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           The Collection
         </h2>
@@ -212,9 +229,9 @@ export function ContentEditor({
           }
         />
         {sectionSave('collection', 'Collection')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={3}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           The Making
         </h2>
@@ -260,9 +277,9 @@ export function ContentEditor({
           </div>
         ))}
         {sectionSave('stitchStory', 'The Making')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={4}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           The Maker
         </h2>
@@ -312,9 +329,9 @@ export function ContentEditor({
           onChange={(image) => patch('maker', { ...draft.maker, image })}
         />
         {sectionSave('maker', 'Maker')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={5}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           The Process
         </h2>
@@ -371,9 +388,9 @@ export function ContentEditor({
           </div>
         ))}
         {sectionSave('process', 'Process')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={6}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           Featured
         </h2>
@@ -405,9 +422,9 @@ export function ContentEditor({
           }
         />
         {sectionSave('featuredShowcase', 'Featured')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={7}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           Custom
         </h2>
@@ -445,12 +462,15 @@ export function ContentEditor({
           }
         />
         {sectionSave('customOrder', 'Custom')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={8}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           Studio Notes
         </h2>
+        <p className="page-sub">
+          Images are managed in Gallery and shown automatically on the homepage.
+        </p>
         <Field
           id="gal-eyebrow"
           label="Eyebrow"
@@ -475,61 +495,10 @@ export function ContentEditor({
             patch('gallery', { ...draft.gallery, subheading })
           }
         />
-        {draft.gallery.items.map((item, index) => (
-          <div className="grid-2" key={item.id}>
-            <Field
-              id={`gal-cap-${item.id}`}
-              label={`Caption (${item.id})`}
-              value={item.caption}
-              onChange={(caption) => {
-                const items = [...draft.gallery.items]
-                items[index] = { ...item, caption }
-                patch('gallery', { ...draft.gallery, items })
-              }}
-            />
-            <ImageField
-              id={`gal-img-${item.id}`}
-              label="Image"
-              aspect="gallery"
-              value={item.image}
-              onChange={(image) => {
-                const items = [...draft.gallery.items]
-                items[index] = { ...item, image }
-                patch('gallery', { ...draft.gallery, items })
-              }}
-            />
-            <button
-              type="button"
-              className="btn btn--ghost btn--sm"
-              onClick={() => {
-                const items = draft.gallery.items.filter((_, i) => i !== index)
-                patch('gallery', { ...draft.gallery, items })
-              }}
-            >
-              Remove item
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          className="btn btn--ghost btn--sm"
-          onClick={() => {
-            const id = `g-${Date.now()}`
-            patch('gallery', {
-              ...draft.gallery,
-              items: [
-                ...draft.gallery.items,
-                { id, image: '', caption: 'New caption' },
-              ],
-            })
-          }}
-        >
-          Add gallery item
-        </button>
         {sectionSave('gallery', 'Studio Notes')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={9}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           Kind Words
         </h2>
@@ -595,9 +564,9 @@ export function ContentEditor({
           Add testimonial
         </button>
         {sectionSave('testimonials', 'Kind Words')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={10}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           Shop
         </h2>
@@ -626,9 +595,9 @@ export function ContentEditor({
           }
         />
         {sectionSave('shopPage', 'Shop')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={11}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           Our Story
         </h2>
@@ -672,9 +641,9 @@ export function ContentEditor({
           onChange={(cta) => patch('aboutPage', { ...draft.aboutPage, cta })}
         />
         {sectionSave('aboutPage', 'Our Story')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={12}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           Custom Orders
         </h2>
@@ -712,9 +681,9 @@ export function ContentEditor({
           }
         />
         {sectionSave('customPage', 'Custom Orders')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={13}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           Footer
         </h2>
@@ -775,9 +744,9 @@ export function ContentEditor({
           }
         />
         {sectionSave('footer', 'Footer')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={14}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           Instagram
         </h2>
@@ -813,9 +782,9 @@ export function ContentEditor({
           }
         />
         {sectionSave('instagram', 'Instagram')}
-      </section>
+      </MountSection>
 
-      <section className="panel stack">
+      <MountSection index={15}>
         <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
           Handmade note
         </h2>
@@ -826,7 +795,7 @@ export function ContentEditor({
           onChange={(handmadeNote) => setDraft({ ...draft, handmadeNote })}
         />
         {sectionSave('handmadeNote', 'Handmade note')}
-      </section>
+      </MountSection>
     </div>
   )
 }

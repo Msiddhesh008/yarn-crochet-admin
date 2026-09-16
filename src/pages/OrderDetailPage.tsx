@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useCatalog } from '../context/CatalogContext'
 import { StatusBadge } from '../components/StatusBadge'
@@ -29,7 +30,8 @@ function formatAddress(order: {
 
 export function OrderDetailPage() {
   const { id } = useParams()
-  const { orders, updateOrderStatus } = useCatalog()
+  const { orders, updateOrderStatus, mutating } = useCatalog()
+  const [updating, setUpdating] = useState(false)
   const order = orders.find((o) => o.id === id)
 
   if (!order) {
@@ -152,17 +154,20 @@ export function OrderDetailPage() {
             id="status"
             label="Update status"
             value={order.status}
+            disabled={updating || mutating}
+            hint={updating ? 'Updating…' : undefined}
             fieldStyle={{ marginTop: '1.25rem' }}
             onChange={(next) => {
-              updateOrderStatus(order.id, next as OrderStatus).catch(
-                (err: unknown) => {
+              setUpdating(true)
+              updateOrderStatus(order.id, next as OrderStatus)
+                .catch((err: unknown) => {
                   window.alert(
                     err instanceof Error
                       ? err.message
                       : 'Could not update status',
                   )
-                },
-              )
+                })
+                .finally(() => setUpdating(false))
             }}
             options={ORDER_STATUSES.map((s) => ({
               value: s,

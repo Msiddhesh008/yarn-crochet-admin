@@ -1,32 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Cropper, { type Area, type MediaSize } from 'react-easy-crop'
 import { cropToDataUrl } from '../utils/imageUpload'
+import {
+  SITE_CROP_PRESETS,
+  type CropRatioPreset,
+} from '../data/imageAspects'
+import { LoadingButton } from './LoadingButton'
 
 interface ImageCropModalProps {
   imageSrc: string
-  /** Fixed ratio. Omit for freeform (original + presets). */
+  /** Fixed ratio. Omit for universal presets (all site frames). */
   aspect?: number
   aspectLabel: string
   aspectHint: string
   preferPng?: boolean
+  /** When true (or aspect omitted), show every site crop preset. */
+  universal?: boolean
   onCancel: () => void
   onComplete: (dataUrl: string) => void
 }
-
-type RatioPreset = {
-  id: string
-  label: string
-  /** null = use media natural aspect */
-  value: number | null
-}
-
-const FREEFORM_PRESETS: RatioPreset[] = [
-  { id: 'original', label: 'Original', value: null },
-  { id: '1-1', label: '1∶1', value: 1 },
-  { id: '4-5', label: '4∶5', value: 4 / 5 },
-  { id: '3-4', label: '3∶4', value: 3 / 4 },
-  { id: '16-9', label: '16∶9', value: 16 / 9 },
-]
 
 export function ImageCropModal({
   imageSrc,
@@ -34,29 +26,36 @@ export function ImageCropModal({
   aspectLabel,
   aspectHint,
   preferPng = false,
+  universal = false,
   onCancel,
   onComplete,
 }: ImageCropModalProps) {
-  const freeform = fixedAspect == null
+  const usePresets = universal || fixedAspect == null
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [mediaSize, setMediaSize] = useState<MediaSize | null>(null)
-  const [presetId, setPresetId] = useState('original')
+  const [presetId, setPresetId] = useState('4-5')
+
+  const presets: CropRatioPreset[] = SITE_CROP_PRESETS
 
   const naturalAspect = useMemo(() => {
     if (!mediaSize?.naturalWidth || !mediaSize.naturalHeight) return null
     return mediaSize.naturalWidth / mediaSize.naturalHeight
   }, [mediaSize])
 
+  const activePreset = useMemo(
+    () => presets.find((p) => p.id === presetId) ?? presets[0],
+    [presets, presetId],
+  )
+
   const activeAspect = useMemo(() => {
-    if (!freeform) return fixedAspect
-    const preset = FREEFORM_PRESETS.find((p) => p.id === presetId)
-    if (preset?.value != null) return preset.value
+    if (!usePresets) return fixedAspect
+    if (activePreset.value != null) return activePreset.value
     return naturalAspect ?? 1
-  }, [freeform, fixedAspect, presetId, naturalAspect])
+  }, [usePresets, fixedAspect, activePreset, naturalAspect])
 
   useEffect(() => {
     setCrop({ x: 0, y: 0 })
@@ -89,9 +88,8 @@ export function ImageCropModal({
     }
   }
 
-  const titleRatio = freeform
-    ? (FREEFORM_PRESETS.find((p) => p.id === presetId)?.label ?? 'Freeform')
-    : aspectLabel
+  const titleRatio = usePresets ? activePreset.label : aspectLabel
+  const hintText = usePresets ? activePreset.hint : aspectHint
 
   return (
     <div className="crop-modal" role="dialog" aria-modal="true" aria-labelledby="crop-title">
@@ -102,26 +100,34 @@ export function ImageCropModal({
             <h2 id="crop-title" className="page-title" style={{ fontSize: '1.45rem' }}>
               Frame for the web · {titleRatio}
             </h2>
-            <p className="page-sub">{aspectHint}</p>
+            <p className="page-sub">{hintText}</p>
           </div>
           <button type="button" className="btn btn--ghost btn--sm" onClick={onCancel}>
             Cancel
           </button>
         </div>
 
-        {freeform ? (
-          <div className="crop-modal__presets" role="group" aria-label="Crop shape">
-            {FREEFORM_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                className={`btn btn--ghost btn--sm${presetId === preset.id ? ' is-active' : ''}`}
-                onClick={() => setPresetId(preset.id)}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
+        {usePresets ? (
+          <>
+            <div className="crop-modal__presets" role="group" aria-label="Crop shape">
+              {presets.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className={`btn btn--ghost btn--sm${presetId === preset.id ? ' is-active' : ''}`}
+                  onClick={() => setPresetId(preset.id)}
+                  title={preset.hint}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <p className="crop-modal__preset-hint page-sub" aria-live="polite">
+              <strong>{activePreset.label}</strong>
+              {' — '}
+              {activePreset.hint}
+            </p>
+          </>
         ) : null}
 
         <div className="crop-modal__stage">
@@ -154,16 +160,18 @@ export function ImageCropModal({
           </label>
           {error ? <p className="image-field__error">{error}</p> : null}
           <div className="form-actions" style={{ marginTop: 0 }}>
-            <button
+            <LoadingButton
               type="button"
-              className="btn btn--primary"
+              className="btn--primary"
               onClick={() => {
                 apply().catch(console.error)
               }}
-              disabled={busy || !croppedAreaPixels}
+              loading={busy}
+              loadingLabel="Saving…"
+              disabled={!croppedAreaPixels}
             >
-              {busy ? 'Saving…' : 'Use crop'}
-            </button>
+              Use crop
+            </LoadingButton>
             <button type="button" className="btn btn--ghost" onClick={onCancel}>
               Cancel
             </button>

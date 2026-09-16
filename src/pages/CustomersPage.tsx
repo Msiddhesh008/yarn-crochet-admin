@@ -14,13 +14,15 @@ export function CustomersPage() {
       {loading ? <p className="page-sub">Loading customers…</p> : null}
 
       {!loading && customers.length === 0 ? (
-        <EmptyState
-          title="No customers yet"
-          body="When someone registers on the storefront, they’ll appear here."
-        />
+        <div className="panel panel--mount" style={{ marginTop: '1.25rem' }}>
+          <EmptyState
+            title="No customers yet"
+            body="When someone registers on the storefront, they’ll appear here."
+          />
+        </div>
       ) : (
-        <div className="panel" style={{ marginTop: '1.25rem' }}>
-          <div className="table-wrap">
+        <div className="panel panel--mount" style={{ marginTop: '1.25rem' }}>
+          <div className="table-wrap table-wrap--mount">
             <table className="data-table">
               <thead>
                 <tr>
@@ -33,8 +35,12 @@ export function CustomersPage() {
                 </tr>
               </thead>
               <tbody>
-                {customers.map((customer) => (
-                  <tr key={customer.id}>
+                {customers.map((customer, index) => (
+                  <tr
+                    key={customer.id}
+                    className="data-table__row"
+                    style={{ animationDelay: `${Math.min(index, 12) * 35}ms` }}
+                  >
                     <td>{customer.name}</td>
                     <td>{customer.email}</td>
                     <td>{customer.phone || '—'}</td>

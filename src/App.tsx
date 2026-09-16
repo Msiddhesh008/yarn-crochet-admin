@@ -14,6 +14,7 @@ import { CustomRequestsPage } from './pages/CustomRequestsPage'
 import { CustomersPage } from './pages/CustomersPage'
 import { CustomerDetailPage } from './pages/CustomerDetailPage'
 import { ApiHealthPage } from './pages/ApiHealthPage'
+import { GalleryPage } from './pages/GalleryPage'
 
 function ProductFormRoute() {
   const { id } = useParams()
@@ -38,6 +39,7 @@ export default function App() {
                 <Route path="customers" element={<CustomersPage />} />
                 <Route path="customers/:id" element={<CustomerDetailPage />} />
                 <Route path="content" element={<ContentPage />} />
+                <Route path="gallery" element={<GalleryPage />} />
                 <Route path="custom-requests" element={<CustomRequestsPage />} />
                 <Route path="api-health" element={<ApiHealthPage />} />
               </Route>

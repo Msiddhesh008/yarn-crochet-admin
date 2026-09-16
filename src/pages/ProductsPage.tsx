@@ -13,6 +13,7 @@ import {
   MAX_COLLECTION_PRODUCTS,
   MAX_FEATURED_PRODUCTS,
 } from '../constants/productLimits'
+import { LoadingButton } from '../components/LoadingButton'
 
 const CATEGORY_OPTIONS = [
   { value: 'All', label: 'All categories' },
@@ -20,11 +21,12 @@ const CATEGORY_OPTIONS = [
 ]
 
 export function ProductsPage() {
-  const { products, deleteProduct, saveProduct } = useCatalog()
+  const { products, deleteProduct, saveProduct, mutating } = useCatalog()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('All')
   const [status, setStatus] = useState<'All' | PublishStatus>('All')
   const [pendingKey, setPendingKey] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const featuredCount = useMemo(
     () => products.filter((p) => p.featured).length,
@@ -216,23 +218,28 @@ export function ProductsPage() {
                         >
                           Edit
                         </Link>
-                        <button
+                        <LoadingButton
                           type="button"
-                          className="btn btn--ghost btn--sm"
+                          className="btn--ghost btn--sm"
+                          loading={deletingId === product.id}
+                          loadingLabel="Deleting…"
+                          disabled={mutating && deletingId !== product.id}
                           onClick={() => {
-                            if (window.confirm(`Remove ${product.name}?`)) {
-                              deleteProduct(product.id).catch((err: unknown) => {
+                            if (!window.confirm(`Remove ${product.name}?`)) return
+                            setDeletingId(product.id)
+                            deleteProduct(product.id)
+                              .catch((err: unknown) => {
                                 window.alert(
                                   err instanceof Error
                                     ? err.message
                                     : 'Could not delete product',
                                 )
                               })
-                            }
+                              .finally(() => setDeletingId(null))
                           }}
                         >
                           Delete
-                        </button>
+                        </LoadingButton>
                       </div>
                     </td>
                   </tr>

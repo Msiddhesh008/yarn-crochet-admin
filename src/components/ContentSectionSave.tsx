@@ -1,3 +1,5 @@
+import { LoadingButton } from './LoadingButton'
+
 interface ContentSectionSaveProps {
   section: string
   saving: boolean
@@ -15,14 +17,15 @@ export function ContentSectionSave({
 }: ContentSectionSaveProps) {
   return (
     <div className="form-actions content-section-save">
-      <button
+      <LoadingButton
         type="button"
-        className="btn btn--primary"
-        disabled={saving}
+        className="btn--primary"
+        loading={saving}
+        loadingLabel="Saving…"
         onClick={onSave}
       >
-        {saving ? 'Saving…' : `Save ${section}`}
-      </button>
+        {`Save ${section}`}
+      </LoadingButton>
       {saved ? <span className="page-sub">Saved.</span> : null}
       {error ? <span className="login-error">{error}</span> : null}
     </div>

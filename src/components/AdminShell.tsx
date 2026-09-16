@@ -13,9 +13,12 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Activity,
+  Images,
 } from 'lucide-react'
 import logo from '../assets/logo-transparent.png'
 import { useAuth } from '../context/AuthContext'
+import { useCatalog } from '../context/CatalogContext'
+import { AdminLoader } from './AdminLoader'
 
 const links = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -23,6 +26,7 @@ const links = [
   { to: '/orders', label: 'Orders', icon: ShoppingBag },
   { to: '/customers', label: 'Customers', icon: Users },
   { to: '/content', label: 'Content', icon: FileText },
+  { to: '/gallery', label: 'Gallery', icon: Images },
   { to: '/custom-requests', label: 'Custom requests', icon: MessageSquareHeart },
   { to: '/api-health', label: 'API Health', icon: Activity },
 ]
@@ -31,6 +35,7 @@ const SIDEBAR_QUOTE = 'Little hands. Big dreams.'
 
 export function AdminShell() {
   const { email, logout } = useAuth()
+  const { loading, mutating } = useCatalog()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(() => {
@@ -57,8 +62,19 @@ export function AdminShell() {
     navigate('/login')
   }
 
+  const showLoader = loading || mutating
+
   return (
-    <div className={`shell${collapsed ? ' shell--collapsed' : ''}`}>
+    <div
+      className={`shell${collapsed ? ' shell--collapsed' : ''}`}
+      aria-busy={showLoader || undefined}
+    >
+      {showLoader ? (
+        <AdminLoader
+          variant="overlay"
+          label={loading ? 'Loading studio…' : 'Saving…'}
+        />
+      ) : null}
       {mobileOpen ? (
         <button
           type="button"

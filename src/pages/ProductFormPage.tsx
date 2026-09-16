@@ -14,6 +14,7 @@ import {
   MAX_COLLECTION_PRODUCTS,
   MAX_FEATURED_PRODUCTS,
 } from '../constants/productLimits'
+import { LoadingButton } from '../components/LoadingButton'
 
 function slugify(value: string) {
   return value
@@ -255,9 +256,14 @@ export function ProductFormPage() {
         />
         <div className="form-actions">
           {formError ? <p className="login-error">{formError}</p> : null}
-          <button type="submit" className="btn btn--primary" disabled={saving}>
-            {saving ? 'Saving…' : 'Save piece'}
-          </button>
+          <LoadingButton
+            type="submit"
+            className="btn--primary"
+            loading={saving}
+            loadingLabel="Saving…"
+          >
+            Save piece
+          </LoadingButton>
           <Link to="/products" className="btn btn--ghost">
             Cancel
           </Link>

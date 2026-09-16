@@ -99,6 +99,16 @@ export interface CustomRequest {
   status: 'new' | 'reviewed' | 'quoted' | 'closed'
 }
 
+export interface GalleryAsset {
+  id: string
+  caption: string
+  imageUrl: string
+  cloudinaryPublicId: string
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
 export type {
   SiteContent,
   ProcessVisual,

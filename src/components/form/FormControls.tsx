@@ -141,6 +141,7 @@ interface SelectFieldProps {
   onChange: (value: string) => void
   fieldStyle?: CSSProperties
   pill?: boolean
+  disabled?: boolean
 }
 
 export function SelectField({
@@ -152,6 +153,7 @@ export function SelectField({
   onChange,
   fieldStyle,
   pill = false,
+  disabled = false,
 }: SelectFieldProps) {
   return (
     <FieldShell id={id} label={label} hint={hint} style={fieldStyle}>
@@ -162,6 +164,7 @@ export function SelectField({
         onChange={onChange}
         ariaLabel={label}
         pill={pill}
+        disabled={disabled}
       />
     </FieldShell>
   )

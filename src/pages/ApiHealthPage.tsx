@@ -6,6 +6,7 @@ import {
   probeApiEndpoint,
   type ApiProbeResult,
 } from '../utils/probeApi'
+import { LoadingButton } from '../components/LoadingButton'
 
 type ViewMode = 'table' | 'graph'
 
@@ -107,45 +108,55 @@ export function ApiHealthPage() {
               <LayoutGrid size={14} aria-hidden /> Graph
             </button>
           </div>
-          <button
+          <LoadingButton
             type="button"
-            className="btn btn--primary btn--sm"
+            className="btn--primary btn--sm"
             onClick={() => {
               runChecks().catch(console.error)
             }}
-            disabled={checking}
+            loading={checking}
+            loadingLabel="Checking…"
           >
-            {checking ? 'Checking…' : 'Check again'}
-          </button>
+            Check again
+          </LoadingButton>
         </div>
       </div>
 
       {view === 'table' ? (
-        <section className="panel" style={{ marginTop: '1rem', overflowX: 'auto' }}>
-          <table className="data-table api-health-table">
-            <thead>
-              <tr>
-                <th>Group</th>
-                <th>Endpoint</th>
-                <th>Method</th>
-                <th>Status</th>
-                <th>Latency</th>
-                <th>Result</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(results.length > 0 ? results : API_HEALTH_PROBES.map((p) => ({
-                id: p.id,
-                group: p.group,
-                method: p.method,
-                path: p.path,
-                description: p.description,
-                status: 0,
-                ok: false,
-                ms: 0,
-                error: checking ? 'Checking…' : '—',
-              }))).map((row) => (
-                <tr key={row.id}>
+        <section
+          key={view}
+          className="panel panel--mount"
+          style={{ marginTop: '1rem', overflowX: 'auto' }}
+        >
+          <div className="table-wrap table-wrap--mount">
+            <table className="data-table api-health-table">
+              <thead>
+                <tr>
+                  <th>Group</th>
+                  <th>Endpoint</th>
+                  <th>Method</th>
+                  <th>Status</th>
+                  <th>Latency</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(results.length > 0 ? results : API_HEALTH_PROBES.map((p) => ({
+                  id: p.id,
+                  group: p.group,
+                  method: p.method,
+                  path: p.path,
+                  description: p.description,
+                  status: 0,
+                  ok: false,
+                  ms: 0,
+                  error: checking ? 'Checking…' : '—',
+                }))).map((row, index) => (
+                  <tr
+                    key={row.id}
+                    className="data-table__row"
+                    style={{ animationDelay: `${Math.min(index, 12) * 35}ms` }}
+                  >
                   <td>{row.group}</td>
                   <td>
                     <code>{row.path}</code>
@@ -172,12 +183,17 @@ export function ApiHealthPage() {
                     </span>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       ) : (
-        <section className="panel api-health-graph" style={{ marginTop: '1rem' }}>
+        <section
+          key={view}
+          className="panel panel--mount api-health-graph"
+          style={{ marginTop: '1rem' }}
+        >
           <div className="api-health-graph__summary">
             <div className="api-health-graph__stat">
               <strong>{summary.ok}</strong>
